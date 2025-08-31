@@ -1,0 +1,135 @@
+class Book:
+    def __init__(self, title, author, pages, isbn, publisher=None):
+        self.title = title
+        self.author = author
+        self._pages = int(pages)
+        self.__isbn = str(isbn)  # private
+        self.publisher = publisher
+        self.current_page = 1
+        self._ratings = []
+
+    # Encapsulation: read-only ISBN
+    @property
+    def isbn(self):
+        return self.__isbn
+
+    # Encapsulation: read-only ratings
+    @property
+    def ratings(self):
+        return tuple(self._ratings)
+
+    def read(self, pages=1):
+        self.current_page = min(self._pages, self.current_page + int(pages))
+        return {
+            "current_page": self.current_page,
+            "remaining": self.remaining_pages()
+        }
+
+    def bookmark(self, page):
+        if 1 <= page <= self._pages:
+            self.current_page = page
+            return True
+        return False
+
+    def remaining_pages(self):
+        return self._pages - self.current_page
+
+    def add_rating(self, score):
+        if 1 <= score <= 5:
+            self._ratings.append(score)
+            return True
+        return False
+
+    @property
+    def average_rating(self):
+        return sum(self._ratings) / len(self._ratings) if self._ratings else None
+
+    def preview(self):
+        return f"Preview of '{self.title}' by {self.author}."
+
+    def __str__(self):
+        return f"{self.title} by {self.author} ({self._pages} pages)"
+
+    def __repr__(self):
+        return f"<Book title={self.title!r} author={self.author!r}>"
+
+    # Compare books by number of pages
+    def __lt__(self, other):
+        if isinstance(other, Book):
+            return self._pages < other._pages
+        return NotImplemented
+
+
+class EBook(Book):
+    def __init__(self, title, author, pages, isbn, file_size_mb, file_format="epub", publisher=None):
+        super().__init__(title, author, pages, isbn, publisher)
+        self.file_size_mb = float(file_size_mb)
+        self.file_format = file_format
+        self.font_size = 12
+
+    # Polymorphism: override read to simulate location in percentage
+    def read(self, minutes=1):
+        super().read(minutes)
+        return {
+            "current_page": self.current_page,
+            "remaining": self.remaining_pages(),
+            "percent": round(self.current_page / self._pages * 100, 1)
+        }
+
+    def adjust_font(self, size):
+        if 6 <= size <= 72:
+            self.font_size = size
+            return True
+        return False
+
+    def preview(self):
+        return f"[eBook:{self.file_format}] {self.title} — {self.author} (font {self.font_size})"
+
+    def __repr__(self):
+        return f"<EBook title={self.title!r} format={self.file_format!r}>"
+
+
+class Hardcover(Book):
+    def __init__(self, title, author, pages, isbn, weight_kg=0.5, cover_material="cloth", publisher=None):
+        super().__init__(title, author, pages, isbn, publisher)
+        self.weight_kg = float(weight_kg)
+        self.cover_material = cover_material
+        self.signatures = []
+
+    def sign(self, signer_name):
+        self.signatures.append(signer_name)
+        return f"Signed by {signer_name}"
+
+    def preview(self):
+        sign_note = f" (signed by {', '.join(self.signatures)})" if self.signatures else ""
+        return f"[Hardcover{sign_note}] {self.title} — {self.author}"
+
+    def __repr__(self):
+        return f"<Hardcover title={self.title!r} material={self.cover_material!r}>"
+
+
+# Example usage demonstrating inheritance, encapsulation, and polymorphism
+if __name__ == "__main__":
+    b1 = Book("Atlas of Trees", "A. Botanist", 320, "ISBN123456")
+    e1 = EBook("Python Patterns", "Dev Author", 240, "ISBN987654", file_size_mb=2.4, file_format="pdf")
+    h1 = Hardcover("Foundations of Math", "M. Theorist", 560, "ISBN555666", weight_kg=1.2, cover_material="leather")
+
+    # Interact
+    b1.add_rating(5)
+    b1.add_rating(4)
+    e1.adjust_font(16)
+    h1.sign("Author")
+    h1.sign("Reviewer")
+
+    # Polymorphic preview and reading
+    library = [b1, e1, h1]
+    for item in library:
+        print(item.preview())
+        print("Read result:", item.read(5))
+        print("Remaining pages:", item.remaining_pages())
+        print("Avg rating:", item.average_rating)
+        print("Ratings (read-only):", item.ratings)
+        print("---")
+
+    # Compare books
+    print("Is Atlas of Trees smaller than Foundations of Math?", b1 < h1)
